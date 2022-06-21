@@ -189,6 +189,39 @@ BATCH_CHILDREN_BEFORE_PARENT = [
 ]
 
 
+BATCH_TRY_CHANGE_TYPE = [
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Товары",
+                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "parentId": None
+            },
+            {
+                "type": "OFFER",
+                "name": "Nokia 3310",
+                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "price": 20000
+            },
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Nokia 3310",
+                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+            }
+        ],
+        "updateDate": "2022-04-01T12:00:00.000Z"
+    },
+]
+
+
 def request(path, method="GET", data=None, json_response=False):
     try:
         params = {
@@ -256,6 +289,25 @@ def test_import_children_before_parent():
         status, _ = request("/imports", method="POST", data=batch)
 
         assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    print("Test import passed.")
+
+
+def test_change_type():
+    """
+    тестирование кейса, когда дочерний элемент импортируется раньше родительского
+
+    Тк в задании сказано, что порядок элементов является произвольным
+    """
+
+    import_batch = BATCH_TRY_CHANGE_TYPE[0]
+    change_type_batch = BATCH_TRY_CHANGE_TYPE[1]
+
+    status, _ = request("/imports", method="POST", data=import_batch)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request("/imports", method="POST", data=change_type_batch)
+    assert status == 404, f"Expected HTTP status code 200, got {status}"
 
     print("Test import passed.")
 
