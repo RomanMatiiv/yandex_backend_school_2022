@@ -3,6 +3,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.http import Http404
+from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
@@ -27,43 +28,100 @@ class ShopUnitApi(View):
         all_shop_unit = {}
         for raw_shop_unit in items:
             uuid = raw_shop_unit.get('id')
-            name = raw_shop_unit.get('name')
-            price = raw_shop_unit.get('price')
-            unit_type = raw_shop_unit.get('type')
-            parent_id = raw_shop_unit.get('parentId')
-            if parent_id: # todo тк порядок элементов произвольный может быть случай что родительский элемент добавится позже
-                logger.debug(parent_id)
-                try:
-                    parent_id = ShopUnit.objects.get(pk=parent_id)
-                except ShopUnit.DoesNotExist:
-                    parent_id = all_shop_unit.get(parent_id)
-                    if parent_id is None:
-                        raise Http404
-
             shop_unit_data = {
-                'id': uuid,
-                'name': name,
-                'parent_id': parent_id,
-                'price': price,
-                'type': unit_type,
-                'date': update_date,
+                'data': {
+                    'id': uuid,
+                    'name': raw_shop_unit.get('name'),
+                    'price': raw_shop_unit.get('price'),
+                    'type': raw_shop_unit.get('type'),
+                    'date': update_date,
+                },
+                'raw_parent_id': raw_shop_unit.get('parentId'),
             }
-            shop_unit = ShopUnit(**shop_unit_data)
-            try:
-                shop_unit.clean_fields()
-            except ValidationError as e:
-                logger.error(shop_unit_data)
-                logger.error(e)
-                raise BadRequest('Validation Failed')
-            else:
-                all_shop_unit[uuid] = shop_unit
+            all_shop_unit[uuid] = shop_unit_data
 
-        logger.debug('start insert {} shop unit'.format(len(all_shop_unit)))
+        all_uuid = all_shop_unit.keys()
+        existing_shop_unit = ShopUnit.objects.filter(id__in=all_uuid).values_list('id', flat=True)
+        existing_shop_unit = [str(i) for i in existing_shop_unit]
 
-        for shop_unit in all_shop_unit.values():
-            shop_unit.save()
-        # ShopUnit.objects.bulk_create(all_shop_unit.values())
-        # ShopUnit.objects.bulk_update(all_shop_unit.values(), fields=)
+        to_create_unit = all_shop_unit.copy()
+        to_update_unit = {}
+        for uuid in existing_shop_unit:
+            unit_to_update = to_create_unit.pop(uuid)
+            to_update_unit[uuid] = unit_to_update
+        # all_shop_unit - все объекты из запроса
+        # to_create_unit - объекты которых нет в БД
+        # to_update_unit - объекты которые нужно обновить (уже есть в БД)
+
+        _to_create_unit = []
+        for uuid, val in to_create_unit.items():
+            unit_data = val['data']
+            unit_raw_parent_id = val['raw_parent_id']
+
+            # поверка на то, что указанный parent_id вообще существует
+            if unit_raw_parent_id:
+                try:
+                    _ = ShopUnit.objects.get(pk=unit_raw_parent_id)
+                except ShopUnit.DoesNotExist:
+                    parent_id = all_shop_unit.get(unit_raw_parent_id)
+                    # если не None то пока нет, но скоро создадим
+                    if parent_id is None:
+                        raise BadRequest('Validation Failed')
+            shop_unit = ShopUnit(**unit_data)
+            _to_create_unit.append(shop_unit)
+
+        _to_update_unit = []
+        for uuid, val in to_update_unit.items():
+            unit_data = val['data']
+            unit_raw_parent_id = val['raw_parent_id']
+
+            # поверка на то, что указанный parent_id вообще существует
+            if unit_raw_parent_id:
+                try:
+                    _ = ShopUnit.objects.get(pk=unit_raw_parent_id)
+                except ShopUnit.DoesNotExist:
+                    parent_id = all_shop_unit.get(unit_raw_parent_id)
+                    # если не None то пока нет, но скоро создадим
+                    if parent_id is None:
+                        raise BadRequest('Validation Failed')
+            shop_unit = ShopUnit(**unit_data)
+            _to_update_unit.append(shop_unit)
+
+        ShopUnit.objects.bulk_create(_to_create_unit)
+        ShopUnit.objects.bulk_update(_to_update_unit, fields=['тут все поля которые можно обновлять кроме parent id'])
+
+        _to_create_unit_with_parent_id = []
+        for uuid, val in to_create_unit.items():
+            unit_data = val['data']
+            unit_raw_parent_id = val['raw_parent_id']
+
+            if unit_raw_parent_id:
+                try:
+                    unit_parent = ShopUnit.objects.get(pk=unit_raw_parent_id)
+                    unit_data['parent_id'] = unit_parent
+                except ShopUnit.DoesNotExist:
+                    logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
+                    return JsonResponse({"message": "inconsistent"}, status=500)
+                shop_unit = ShopUnit(**unit_data)
+                _to_create_unit_with_parent_id.append(shop_unit)
+
+        _to_update_unit_with_parent_id = []
+        for uuid, val in to_update_unit.items():
+            unit_data = val['data']
+            unit_raw_parent_id = val['raw_parent_id']
+
+            if unit_raw_parent_id:
+                try:
+                    unit_parent = ShopUnit.objects.get(pk=unit_raw_parent_id)
+                    unit_data['parent_id'] = unit_parent
+                except ShopUnit.DoesNotExist:
+                    logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
+                    return JsonResponse({"message": "inconsistent"}, status=500)
+                shop_unit = ShopUnit(**unit_data)
+                _to_update_unit_with_parent_id.append(shop_unit)
+
+        ShopUnit.objects.bulk_update(_to_create_unit_with_parent_id, fields=['parent_id'])
+        ShopUnit.objects.bulk_update(_to_update_unit_with_parent_id, fields=['parent_id'])
 
         data = {}
         return JsonResponse(data, status=200)
