@@ -291,7 +291,7 @@ def test_change_type():
     assert status == 200, f"Expected HTTP status code 200, got {status}"
 
     status, _ = request("/imports", method="POST", data=change_type_batch)
-    assert status == 404, f"Expected HTTP status code 200, got {status}"
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
 
 
 def test_offer_price_equal_null():
@@ -326,7 +326,7 @@ def test_offer_price_equal_null():
     assert status == 200, f"Expected HTTP status code 200, got {status}"
 
     status, _ = request("/imports", method="POST", data=import_offer)
-    assert status == 400, f"Expected HTTP status code 200, got {status}"
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
 
 
 def test_import_offer_without_parent_id():
