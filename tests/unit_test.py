@@ -309,7 +309,40 @@ def test_change_type():
     status, _ = request("/imports", method="POST", data=change_type_batch)
     assert status == 404, f"Expected HTTP status code 200, got {status}"
 
-    print("Test import passed.")
+
+def test_offer_price_equal_null():
+    """
+    Тестирование изменения типа объекта с offer на category
+    """
+    import_category = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Спутники",
+                "id": "bc730e66-7be6-4740-bf20-7820a1da9c12",
+                "parentId": None,
+            }
+        ],
+        "updateDate": "2022-02-01T11:00:00.000Z"
+    }
+
+    import_offer = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Starlink",
+                "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
+                "parentId": "bc730e66-7be6-4740-bf20-7820a1da9c12",
+            }
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=import_category)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request("/imports", method="POST", data=import_offer)
+    assert status == 404, f"Expected HTTP status code 200, got {status}"
 
 
 @pytest.mark.skip(reason="not implement")
