@@ -223,6 +223,180 @@ def test_import():
     print("Test import passed.")
 
 
+def test_incorrect_parent():
+    """
+    Родителем товара или категории может быть только категория
+    """
+    import_batch = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Товары",
+                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "parentId": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07"
+            },
+            {
+                "type": "OFFER",
+                "name": "Nokia 3310",
+                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "parentId": None,
+                "price": 20000
+            },
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=import_batch)
+    assert status == 400, f"Expected HTTP status code 200, got {status}"
+
+
+def test_name_equal_null():
+    """
+    Название элемента не может быть null
+    """
+    offer = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": None,
+                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "parentId": None,
+                "price": 20000
+            },
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    category = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": None,
+                "id": "61028d01-2e20-4ce2-b5ff-a5901a97af59",
+                "parentId": None,
+            },
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=offer)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+    status, _ = request("/imports", method="POST", data=category)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
+def test_price_equal_not_null_for_category():
+    """
+    У категорий поле price должно содержать null
+    """
+    category = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Плееры",
+                "id": "53770c11-9b6a-4c1a-b66b-de72cddc15e8",
+                "parentId": None,
+                "price": 999,
+            },
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=category)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
+def test_offer_price_equal_null():
+    """
+    Цена товара не может быть null
+    """
+    import_offer = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Starlink",
+                "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
+                "parentId": "bc730e66-7be6-4740-bf20-7820a1da9c12",
+                "price": None,
+            }
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=import_offer)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
+def test_offer_price_equal_minus_one():
+    """
+    Цена товара должна быть больше либо равна нулю.
+    """
+    import_offer = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Starlink",
+                "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
+                "parentId": "bc730e66-7be6-4740-bf20-7820a1da9c12",
+                "price": -1,
+            }
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=import_offer)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
+def test_two_element_with_same_uuid():
+    """
+    В одном запросе не может быть двух элементов с одинаковым id
+    """
+    batch_children_before_parent = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Смартфоны 1",
+                "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "parentId": None
+            },
+            {
+                "type": "CATEGORY",
+                "name": "Смартфоны 2",
+                "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "parentId": None
+            },
+        ],
+        "updateDate": "2022-03-01T12:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=batch_children_before_parent)
+
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
+def test_incorrect_date_format():
+    """
+    Дата должна обрабатываться согласно ISO 8601.
+    Если дата не удовлетворяет данному формату, необходимо отвечать 400.
+    """
+    import_offer = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Starlink",
+                "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
+                "parentId": None,
+            }
+        ],
+        "updateDate": "01-03-2022"
+    }
+
+    status, _ = request("/imports", method="POST", data=import_offer)
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
 def test_import_children_before_parent():
     """
     тестирование кейса, когда дочерний элемент импортируется раньше родительского
@@ -256,6 +430,8 @@ def test_import_children_before_parent():
 def test_change_type():
     """
     Тестирование изменения типа объекта с offer на category
+
+    !!!тип то не меняет но и 400 не возвращяет
     """
     import_batch = {
         "items": [
@@ -291,10 +467,10 @@ def test_change_type():
     assert status == 200, f"Expected HTTP status code 200, got {status}"
 
     status, _ = request("/imports", method="POST", data=change_type_batch)
-    assert status == 404, f"Expected HTTP status code 404, got {status}"
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
 
 
-def test_offer_price_equal_null():
+def test_import_incorrect_uuid():
     """
     Тестирование изменения типа объекта с offer на category
     """
@@ -303,29 +479,14 @@ def test_offer_price_equal_null():
             {
                 "type": "CATEGORY",
                 "name": "Спутники",
-                "id": "bc730e66-7be6-4740-bf20-7820a1da9c12",
+                "id": "1234",
                 "parentId": None,
             }
         ],
         "updateDate": "2022-02-01T11:00:00.000Z"
     }
 
-    import_offer = {
-        "items": [
-            {
-                "type": "OFFER",
-                "name": "Starlink",
-                "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
-                "parentId": "bc730e66-7be6-4740-bf20-7820a1da9c12",
-            }
-        ],
-        "updateDate": "2022-03-01T11:00:00.000Z"
-    }
-
     status, _ = request("/imports", method="POST", data=import_category)
-    assert status == 200, f"Expected HTTP status code 200, got {status}"
-
-    status, _ = request("/imports", method="POST", data=import_offer)
     assert status == 400, f"Expected HTTP status code 400, got {status}"
 
 
