@@ -167,61 +167,6 @@ EXPECTED_TREE = {
 }
 
 
-BATCH_CHILDREN_BEFORE_PARENT = [
-    {
-        "items": [
-            {
-                "type": "OFFER",
-                "name": "jPhone 666",
-                "id": "c57a4cc4-86da-46a5-bda5-95bbbc451f20",
-                "parentId": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
-                "price": 79999
-            },
-            {
-                "type": "CATEGORY",
-                "name": "Смартфоны",
-                "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
-                "parentId": None
-            },
-        ],
-        "updateDate": "2022-03-01T12:00:00.000Z"
-    }
-]
-
-
-BATCH_TRY_CHANGE_TYPE = [
-    {
-        "items": [
-            {
-                "type": "CATEGORY",
-                "name": "Товары",
-                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
-                "parentId": None
-            },
-            {
-                "type": "OFFER",
-                "name": "Nokia 3310",
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
-                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
-                "price": 20000
-            },
-        ],
-        "updateDate": "2022-02-01T12:00:00.000Z"
-    },
-    {
-        "items": [
-            {
-                "type": "CATEGORY",
-                "name": "Nokia 3310",
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
-                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
-            }
-        ],
-        "updateDate": "2022-04-01T12:00:00.000Z"
-    },
-]
-
-
 def request(path, method="GET", data=None, json_response=False):
     try:
         params = {
@@ -284,24 +229,63 @@ def test_import_children_before_parent():
 
     Тк в задании сказано, что порядок элементов является произвольным
     """
-    for index, batch in enumerate(BATCH_CHILDREN_BEFORE_PARENT):
-        print(f"Importing batch {index}")
-        status, _ = request("/imports", method="POST", data=batch)
+    batch_children_before_parent = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "jPhone 666",
+                "id": "c57a4cc4-86da-46a5-bda5-95bbbc451f20",
+                "parentId": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "price": 79999
+            },
+            {
+                "type": "CATEGORY",
+                "name": "Смартфоны",
+                "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "parentId": None
+            },
+        ],
+        "updateDate": "2022-03-01T12:00:00.000Z"
+    }
 
-        assert status == 200, f"Expected HTTP status code 200, got {status}"
+    status, _ = request("/imports", method="POST", data=batch_children_before_parent)
 
-    print("Test import passed.")
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
 
 
 def test_change_type():
     """
-    тестирование кейса, когда дочерний элемент импортируется раньше родительского
-
-    Тк в задании сказано, что порядок элементов является произвольным
+    Тестирование изменения типа объекта с offer на category
     """
-
-    import_batch = BATCH_TRY_CHANGE_TYPE[0]
-    change_type_batch = BATCH_TRY_CHANGE_TYPE[1]
+    import_batch = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Товары",
+                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "parentId": None
+            },
+            {
+                "type": "OFFER",
+                "name": "Nokia 3310",
+                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "price": 20000
+            },
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    }
+    change_type_batch = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Nokia 3310",
+                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+            }
+        ],
+        "updateDate": "2022-04-01T12:00:00.000Z"
+    }
 
     status, _ = request("/imports", method="POST", data=import_batch)
     assert status == 200, f"Expected HTTP status code 200, got {status}"
