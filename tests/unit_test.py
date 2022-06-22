@@ -329,6 +329,26 @@ def test_offer_price_equal_null():
     assert status == 400, f"Expected HTTP status code 200, got {status}"
 
 
+def test_import_offer_without_parent_id():
+    """
+    Создание товара без категории
+    """
+    import_offer = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Starlink",
+                "id": "daa328ab-dadc-4e4b-b25d-1a46316c6f19",
+                "price": 100000
+            }
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=import_offer)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+
 @pytest.mark.skip(reason="not implement")
 def test_nodes():
     status, response = request(f"/nodes/{ROOT_ID}", json_response=True)
