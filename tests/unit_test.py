@@ -226,6 +226,8 @@ def test_import():
 def test_incorrect_parent():
     """
     Родителем товара или категории может быть только категория
+
+    Решение: нужно водить 2 модели а не все в одной делать
     """
     import_batch = {
         "items": [
@@ -289,6 +291,9 @@ def test_name_equal_null():
 def test_price_equal_not_null_for_category():
     """
     У категорий поле price должно содержать null
+
+    Решение: нужно водить 2 модели а не все в одной делать
+             ну или в переопределенный clean_fields засунуть, что такое себе
     """
     category = {
         "items": [
