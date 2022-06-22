@@ -51,9 +51,10 @@ class ShopUnitApi(View):
             shop_unit = ShopUnit(**shop_unit_data)
             try:
                 shop_unit.clean_fields()
-            except ValidationError:
+            except ValidationError as e:
                 logger.error(shop_unit_data)
-                BadRequest('Validation Failed')
+                logger.error(e)
+                raise BadRequest('Validation Failed')
             else:
                 all_shop_unit[uuid] = shop_unit
 

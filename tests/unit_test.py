@@ -326,7 +326,7 @@ def test_offer_price_equal_null():
     assert status == 200, f"Expected HTTP status code 200, got {status}"
 
     status, _ = request("/imports", method="POST", data=import_offer)
-    assert status == 404, f"Expected HTTP status code 200, got {status}"
+    assert status == 400, f"Expected HTTP status code 200, got {status}"
 
 
 @pytest.mark.skip(reason="not implement")
