@@ -41,7 +41,10 @@ class ShopUnitApi(View):
             all_shop_unit[uuid] = shop_unit_data
 
         all_uuid = all_shop_unit.keys()
-        existing_shop_unit = ShopUnit.objects.filter(id__in=all_uuid).values_list('id', flat=True)
+        try:
+            existing_shop_unit = ShopUnit.objects.filter(id__in=all_uuid).values_list('id', flat=True)
+        except ValidationError:
+            raise BadRequest('Validation Failed')
         existing_shop_unit = [str(i) for i in existing_shop_unit]
 
         to_create_unit = all_shop_unit.copy()
@@ -68,6 +71,10 @@ class ShopUnitApi(View):
                     if parent_id is None:
                         raise BadRequest('Validation Failed')
             shop_unit = ShopUnit(**unit_data)
+            try:
+                shop_unit.clean_fields()
+            except ValidationError as e:
+                raise BadRequest('Validation Failed')
             _to_create_unit.append(shop_unit)
 
         _to_update_unit = []
@@ -85,10 +92,14 @@ class ShopUnitApi(View):
                     if parent_id is None:
                         raise BadRequest('Validation Failed')
             shop_unit = ShopUnit(**unit_data)
+            try:
+                shop_unit.clean_fields()
+            except ValidationError as e:
+                raise BadRequest('Validation Failed')
             _to_update_unit.append(shop_unit)
 
         ShopUnit.objects.bulk_create(_to_create_unit)
-        ShopUnit.objects.bulk_update(_to_update_unit, fields=['тут все поля которые можно обновлять кроме parent id'])
+        ShopUnit.objects.bulk_update(_to_update_unit, fields=['name', 'price', 'date'])
 
         _to_create_unit_with_parent_id = []
         for uuid, val in to_create_unit.items():
@@ -103,6 +114,10 @@ class ShopUnitApi(View):
                     logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
                     return JsonResponse({"message": "inconsistent"}, status=500)
                 shop_unit = ShopUnit(**unit_data)
+                try:
+                    shop_unit.clean_fields()
+                except ValidationError as e:
+                    raise BadRequest('Validation Failed')
                 _to_create_unit_with_parent_id.append(shop_unit)
 
         _to_update_unit_with_parent_id = []
@@ -118,6 +133,10 @@ class ShopUnitApi(View):
                     logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
                     return JsonResponse({"message": "inconsistent"}, status=500)
                 shop_unit = ShopUnit(**unit_data)
+                try:
+                    shop_unit.clean_fields()
+                except ValidationError as e:
+                    raise BadRequest('Validation Failed')
                 _to_update_unit_with_parent_id.append(shop_unit)
 
         ShopUnit.objects.bulk_update(_to_create_unit_with_parent_id, fields=['parent_id'])
