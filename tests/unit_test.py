@@ -249,7 +249,7 @@ def test_incorrect_parent():
     }
 
     status, _ = request("/imports", method="POST", data=import_batch)
-    assert status == 400, f"Expected HTTP status code 200, got {status}"
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
 
 
 def test_name_equal_null():
@@ -261,7 +261,7 @@ def test_name_equal_null():
             {
                 "type": "OFFER",
                 "name": None,
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "id": "dab1ef99-b831-4801-98ed-79df40729fa1",
                 "parentId": None,
                 "price": 20000
             },
@@ -300,7 +300,7 @@ def test_price_equal_not_null_for_category():
             {
                 "type": "CATEGORY",
                 "name": "Плееры",
-                "id": "53770c11-9b6a-4c1a-b66b-de72cddc15e8",
+                "id": "33161b54-bdef-4d85-8d6d-fa19f1f645f5",
                 "parentId": None,
                 "price": 999,
             },
@@ -449,7 +449,7 @@ def test_change_type():
             {
                 "type": "OFFER",
                 "name": "Nokia 3310",
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "id": "e0f78d80-527c-4a0a-b830-a524ae3c24c8",
                 "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
                 "price": 20000
             },
@@ -461,7 +461,7 @@ def test_change_type():
             {
                 "type": "CATEGORY",
                 "name": "Nokia 3310",
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "id": "e0f78d80-527c-4a0a-b830-a524ae3c24c8",
                 "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
             }
         ],
