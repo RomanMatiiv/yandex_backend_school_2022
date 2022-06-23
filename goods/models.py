@@ -1,6 +1,7 @@
 import uuid
 
 from django.core.exceptions import ValidationError
+from django.core.validators import BaseValidator
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import CharField
@@ -15,22 +16,22 @@ class ShopUnitType(models.TextChoices):
     CATEGORY = 'CATEGORY'
 
 
-class ShopUnit(models.Model):
+class ShopUnitOffer(models.Model):
     id = UUIDField(primary_key=True, editable=False)
-    name = CharField(max_length=255)
-    parent_id = ForeignKey('ShopUnit', on_delete=models.CASCADE, null=True, blank=True)
-    price = FloatField(null=True, blank=True, validators=[MinValueValidator(0)])   # todo для товаров не может быть NULL
-    type = CharField(max_length=20, choices=ShopUnitType.choices, editable=False)  # todo не работает eidtable=False
+    name = CharField(max_length=255, null=False)
+    parent_id = ForeignKey('ShopUnitCategory', on_delete=models.CASCADE, null=True, blank=True)
+    price = FloatField(null=False, validators=[MinValueValidator(0)])
+    type = CharField(max_length=20, default=ShopUnitType.OFFER, null=False, editable=False)  # todo написать валидатор который будет проверять что тип равен нужному
     date = DateTimeField()
 
-    def clean_fields(self, exclude=None):
-        if self.type == ShopUnitType.OFFER:
-            if self.price is None:
-                error = {'price': "ShopUnit with type: {} must be not null".format(ShopUnitType.OFFER)}
-                raise ValidationError(error)
 
-        return super().clean_fields(exclude)
-
+class ShopUnitCategory(models.Model):
+    id = UUIDField(primary_key=True, editable=False)
+    name = CharField(max_length=255, null=False)
+    parent_id = ForeignKey('ShopUnitCategory', on_delete=models.CASCADE, null=True, blank=True)
+    price = FloatField(null=True, blank=True, default=None, editable=False)
+    type = CharField(max_length=20, default=ShopUnitType.CATEGORY, null=False, editable=False)  # todo написать валидатор который будет проверять что тип равен нужному
+    date = DateTimeField()
 
 
 
