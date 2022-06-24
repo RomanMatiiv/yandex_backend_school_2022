@@ -55,8 +55,8 @@ class ShopUnitApi(View):
                 parent_id = raw_shop_unit.get('parentId')
                 if parent_id:
                     parent_id = UUID(raw_shop_unit.get('parentId'))
-            except ValueError:  # check UUID
-                raise BadRequest('Validation Failed')
+            except ValueError:
+                raise BadRequest('Invalid UUID')
 
             unit_data_without_parent = {
                 'id': uuid_unit,
@@ -76,7 +76,7 @@ class ShopUnitApi(View):
                     category_items[uuid_unit] = {'model': shop_unit,
                                                  'parent_id': parent_id}
                 case _:
-                    raise BadRequest('Validation Failed')
+                    raise BadRequest('Get unexpected type: {}'.format(type_unit))
 
             try:
                 shop_unit.clean_fields()
@@ -89,8 +89,7 @@ class ShopUnitApi(View):
         n_category_items = len(category_items)
         if n_items != n_offer_items + n_category_items:
             logger.debug("total: {}, offer:{}, category:{}".format(n_items, n_offer_items, n_category_items))
-            # в одном запросе несколько элементов с одинаковым id
-            raise BadRequest('Validation Failed')
+            raise BadRequest('Duplicate id in request')
 
         return [offer_items, category_items]
 
@@ -117,7 +116,7 @@ class ShopUnitApi(View):
                 try:
                     unit_parent = unit_model.objects.get(pk=parent_id)
                 except unit_model.DoesNotExist:
-                    raise BadRequest('Validation Failed')
+                    raise BadRequest('Model does not exist, id={}'.format(parent_id))
             model.parent_id = unit_parent
 
         return items
