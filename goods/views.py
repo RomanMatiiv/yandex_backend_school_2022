@@ -94,14 +94,6 @@ class ShopUnitApi(View):
 
         return [offer_items, category_items]
 
-    # def _check_model_exist(self, items: Dict, unit_model, id_field='id') -> List[UUID]:
-    #     all_uuid = items.keys()
-    #     existing_shop_unit = unit_model.objects.filter(id__in=all_uuid).values_list(id_field, flat=True)
-    #     # for uuid_unit in existing_shop_unit:
-    #     #     items[uuid_unit]['exist'] = True
-    #
-    #     return existing_shop_unit
-
     def _separate_create_and_update(self, items, unit_model, id_field='id'):
         all_uuid = items.keys()
         existing_shop_unit = unit_model.objects.filter(id__in=all_uuid).values_list(id_field, flat=True)
