@@ -412,15 +412,15 @@ def test_import_children_before_parent():
         "items": [
             {
                 "type": "OFFER",
-                "name": "jPhone 666",
-                "id": "c57a4cc4-86da-46a5-bda5-95bbbc451f20",
-                "parentId": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "name": "Keychron k3",
+                "id": "9ce9ad31-aa6c-457c-9247-59d3fec38fa4",
+                "parentId": "4337063b-2532-4bcf-a1dd-1288d2c2745d",
                 "price": 79999
             },
             {
                 "type": "CATEGORY",
-                "name": "Смартфоны",
-                "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "name": "Клавиатуры",
+                "id": "4337063b-2532-4bcf-a1dd-1288d2c2745d",
                 "parentId": None
             },
         ],
@@ -436,21 +436,14 @@ def test_change_type():
     """
     Тестирование изменения типа объекта с offer на category
 
-    !!!тип то не меняет но и 400 не возвращяет
+    !!!он просто создает еще один обект другого типа с таким же id
     """
     import_batch = {
         "items": [
             {
-                "type": "CATEGORY",
-                "name": "Товары",
-                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
-                "parentId": None
-            },
-            {
                 "type": "OFFER",
                 "name": "Nokia 3310",
-                "id": "e0f78d80-527c-4a0a-b830-a524ae3c24c8",
-                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
                 "price": 20000
             },
         ],
@@ -461,8 +454,7 @@ def test_change_type():
             {
                 "type": "CATEGORY",
                 "name": "Nokia 3310",
-                "id": "e0f78d80-527c-4a0a-b830-a524ae3c24c8",
-                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
             }
         ],
         "updateDate": "2022-04-01T12:00:00.000Z"
