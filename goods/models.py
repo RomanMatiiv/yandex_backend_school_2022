@@ -10,6 +10,24 @@ from django.db.models import UUIDField
 from django.db.models import ForeignKey
 from django.db.models import DateTimeField
 
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+
+
+def equal_null(value):
+    if value is not None:
+        raise ValidationError("Must be None")
+
+
+def type_offer(value):
+    if value != ShopUnitType.OFFER:
+        raise ValidationError("Must be offer")
+
+
+def type_category(value):
+    if value != ShopUnitType.CATEGORY:
+        raise ValidationError("Must be category")
+
 
 class ShopUnitType(models.TextChoices):
     OFFER = 'OFFER'
@@ -21,7 +39,7 @@ class ShopUnitOffer(models.Model):
     name = CharField(max_length=255, null=False)
     parent_id = ForeignKey('ShopUnitCategory', on_delete=models.CASCADE, null=True, blank=True)
     price = FloatField(null=False, validators=[MinValueValidator(0)])
-    type = CharField(max_length=20, default=ShopUnitType.OFFER, null=False, editable=False)  # todo написать валидатор который будет проверять что тип равен нужному
+    type = CharField(max_length=20, default=ShopUnitType.OFFER, null=False, editable=False, validators=[type_offer])  # todo написать валидатор который будет проверять что тип равен нужному
     date = DateTimeField()
 
 
@@ -29,8 +47,8 @@ class ShopUnitCategory(models.Model):
     id = UUIDField(primary_key=True, editable=False)
     name = CharField(max_length=255, null=False)
     parent_id = ForeignKey('ShopUnitCategory', on_delete=models.CASCADE, null=True, blank=True)
-    price = FloatField(null=True, blank=True, default=None, editable=False)
-    type = CharField(max_length=20, default=ShopUnitType.CATEGORY, null=False, editable=False)  # todo написать валидатор который будет проверять что тип равен нужному
+    price = FloatField(null=True, blank=True, default=None, editable=False, validators=[equal_null])
+    type = CharField(max_length=20, default=ShopUnitType.CATEGORY, null=False, editable=False, validators=[type_category])  # todo написать валидатор который будет проверять что тип равен нужному
     date = DateTimeField()
 
 
