@@ -55,9 +55,8 @@ class ShopUnitApi(View):
                 parent_id = raw_shop_unit.get('parentId')
                 if parent_id:
                     parent_id = UUID(raw_shop_unit.get('parentId'))
-            except ValueError:
+            except ValueError:  # check UUID
                 raise BadRequest('Validation Failed')
-
 
             unit_data_without_parent = {
                 'id': uuid_unit,
@@ -66,10 +65,6 @@ class ShopUnitApi(View):
                 'type': type_unit,
                 'date': update_date,
             }
-            #         try:
-            #             shop_unit.clean_fields()
-            #         except ValidationError as e:
-            #             raise BadRequest('Validation Failed')
 
             match type_unit:
                 case ShopUnitType.OFFER:
@@ -88,6 +83,14 @@ class ShopUnitApi(View):
             except ValidationError as e:
                 logger.error(e)
                 raise BadRequest('Validation Failed')
+
+        n_items = len(items)
+        n_offer_items = len(offer_items)
+        n_category_items = len(category_items)
+        if n_items != n_offer_items + n_category_items:
+            logger.debug("total: {}, offer:{}, category:{}".format(n_items, n_offer_items, n_category_items))
+            # в одном запросе несколько элементов с одинаковым id
+            raise BadRequest('Validation Failed')
 
         return [offer_items, category_items]
 
@@ -164,3 +167,290 @@ class ShopUnitApi(View):
 
         data = {}
         return JsonResponse(data, status=200)
+
+    # def old_post(self, request):
+    #
+    #     # чтение сырых данных----------------------------------------
+    #     body = json.loads(request.body)
+    #
+    #     items = body.get('items')
+    #     update_date = body.get('updateDate')
+    #     all_shop_unit = {}
+    #     for raw_shop_unit in items:
+    #         uuid = raw_shop_unit.get('id')
+    #         shop_unit_data = {
+    #             'data': {
+    #                 'id': uuid,
+    #                 'name': raw_shop_unit.get('name'),
+    #                 'price': raw_shop_unit.get('price'),
+    #                 'type': raw_shop_unit.get('type'),
+    #                 'date': update_date,
+    #             },
+    #             'raw_parent_id': raw_shop_unit.get('parentId'),
+    #         }
+    #         all_shop_unit[uuid] = shop_unit_data
+    #     # ----------------------------------------------------------
+    #
+    #
+    #     # 3 списка объектов, 1)все, 2)что обновить 3)что создать----
+    #     all_uuid = all_shop_unit.keys()
+    #     try:
+    #         existing_shop_unit = ShopUnit.objects.filter(id__in=all_uuid).values_list('id', flat=True)
+    #     except ValidationError:
+    #         raise BadRequest('Validation Failed')
+    #     existing_shop_unit = [str(i) for i in existing_shop_unit]
+    #
+    #     to_create_unit = all_shop_unit.copy()
+    #     to_update_unit = {}
+    #     for uuid in existing_shop_unit:
+    #         unit_to_update = to_create_unit.pop(uuid)
+    #         to_update_unit[uuid] = unit_to_update
+    #     # all_shop_unit - все объекты из запроса
+    #     # to_create_unit - объекты которых нет в БД
+    #     # to_update_unit - объекты которые нужно обновить (уже есть в БД)
+    #     # ----------------------------------------------------------
+    #
+    #
+    #     # объекты на создание, без родителей-----------------------
+    #     _to_create_unit = []
+    #     for uuid, val in to_create_unit.items():
+    #         unit_data = val['data']
+    #         unit_raw_parent_id = val['raw_parent_id']
+    #
+    #         # поверка на то, что указанный parent_id вообще существует!!!!!!!кажется, что лучше не здесь это делать
+    #         if unit_raw_parent_id:
+    #             try:
+    #                 _ = ShopUnit.objects.get(pk=unit_raw_parent_id)
+    #             except ShopUnit.DoesNotExist:
+    #                 parent_id = all_shop_unit.get(unit_raw_parent_id)
+    #                 # если не None то пока нет, но скоро создадим
+    #                 if parent_id is None:
+    #                     raise BadRequest('Validation Failed')
+    #         shop_unit = ShopUnit(**unit_data)
+    #         try:
+    #             shop_unit.clean_fields()
+    #         except ValidationError as e:
+    #             raise BadRequest('Validation Failed')
+    #         _to_create_unit.append(shop_unit)
+    #     # ----------------------------------------------------------
+    #
+    #
+    #     # объекты на обновление, без родитлей-----------------------
+    #     _to_update_unit = []
+    #     for uuid, val in to_update_unit.items():
+    #         unit_data = val['data']
+    #         unit_raw_parent_id = val['raw_parent_id']
+    #
+    #         # поверка на то, что указанный parent_id вообще существует!!!!!!!кажется, что лучше не здесь это делать
+    #         if unit_raw_parent_id:
+    #             try:
+    #                 _ = ShopUnit.objects.get(pk=unit_raw_parent_id)
+    #             except ShopUnit.DoesNotExist:
+    #                 parent_id = all_shop_unit.get(unit_raw_parent_id)
+    #                 # если не None то пока нет, но скоро создадим
+    #                 if parent_id is None:
+    #                     raise BadRequest('Validation Failed')
+    #         shop_unit = ShopUnit(**unit_data)
+    #         try:
+    #             shop_unit.clean_fields()
+    #         except ValidationError as e:
+    #             raise BadRequest('Validation Failed')
+    #         _to_update_unit.append(shop_unit)
+    #     # ----------------------------------------------------------
+    #
+    #
+    #     # создаем и обновляем объекты не заполня родителей---------
+    #     ShopUnit.objects.bulk_create(_to_create_unit)
+    #     ShopUnit.objects.bulk_update(_to_update_unit, fields=['name', 'price', 'date'])
+    #     # ----------------------------------------------------------
+    #
+    #
+    #     # объекты на создание С родителями--------------------------
+    #     _to_create_unit_with_parent_id = []
+    #     for uuid, val in to_create_unit.items():
+    #         unit_data = val['data']
+    #         unit_raw_parent_id = val['raw_parent_id']
+    #
+    #         if unit_raw_parent_id:
+    #             try:
+    #                 unit_parent = ShopUnit.objects.get(pk=unit_raw_parent_id)
+    #                 unit_data['parent_id'] = unit_parent
+    #             except ShopUnit.DoesNotExist:
+    #                 logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
+    #                 return JsonResponse({"message": "inconsistent"}, status=500)
+    #             shop_unit = ShopUnit(**unit_data)
+    #             try:
+    #                 shop_unit.clean_fields()
+    #             except ValidationError as e:
+    #                 raise BadRequest('Validation Failed')
+    #             _to_create_unit_with_parent_id.append(shop_unit)
+    #     # ----------------------------------------------------------
+    #
+    #
+    #     # объекты на обновление С родителями-----------------------
+    #     _to_update_unit_with_parent_id = []
+    #     for uuid, val in to_update_unit.items():
+    #         unit_data = val['data']
+    #         unit_raw_parent_id = val['raw_parent_id']
+    #
+    #         if unit_raw_parent_id:
+    #             try:
+    #                 unit_parent = ShopUnit.objects.get(pk=unit_raw_parent_id)
+    #                 unit_data['parent_id'] = unit_parent
+    #             except ShopUnit.DoesNotExist:
+    #                 logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
+    #                 return JsonResponse({"message": "inconsistent"}, status=500)
+    #             shop_unit = ShopUnit(**unit_data)
+    #             try:
+    #                 shop_unit.clean_fields()
+    #             except ValidationError as e:
+    #                 raise BadRequest('Validation Failed')
+    #             _to_update_unit_with_parent_id.append(shop_unit)
+    #     # ----------------------------------------------------------
+    #
+    #
+    #     # ----------------------------------------------------------
+    #     ShopUnit.objects.bulk_update(_to_create_unit_with_parent_id, fields=['parent_id'])
+    #     ShopUnit.objects.bulk_update(_to_update_unit_with_parent_id, fields=['parent_id'])
+    #     # ----------------------------------------------------------
+    #
+    #     data = {}
+    #     return JsonResponse(data, status=200)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def post(self, request):
+#     body = json.loads(request.body)
+#
+#     items = body.get('items')
+#     update_date = body.get('updateDate')
+#     all_shop_unit = {}
+#     for raw_shop_unit in items:
+#         uuid = raw_shop_unit.get('id')
+#         shop_unit_data = {
+#             'data': {
+#                 'id': uuid,
+#                 'name': raw_shop_unit.get('name'),
+#                 'price': raw_shop_unit.get('price'),
+#                 'type': raw_shop_unit.get('type'),
+#                 'date': update_date,
+#             },
+#             'raw_parent_id': raw_shop_unit.get('parentId'),
+#         }
+#         all_shop_unit[uuid] = shop_unit_data
+#
+#     all_uuid = all_shop_unit.keys()
+#     try:
+#         existing_shop_unit = ShopUnit.objects.filter(id__in=all_uuid).values_list('id', flat=True)
+#     except ValidationError:
+#         raise BadRequest('Validation Failed')
+#     existing_shop_unit = [str(i) for i in existing_shop_unit]
+#
+#     to_create_unit = all_shop_unit.copy()
+#     to_update_unit = {}
+#     for uuid in existing_shop_unit:
+#         unit_to_update = to_create_unit.pop(uuid)
+#         to_update_unit[uuid] = unit_to_update
+#     # all_shop_unit - все объекты из запроса
+#     # to_create_unit - объекты которых нет в БД
+#     # to_update_unit - объекты которые нужно обновить (уже есть в БД)
+#
+#     _to_create_unit = []
+#     for uuid, val in to_create_unit.items():
+#         unit_data = val['data']
+#         unit_raw_parent_id = val['raw_parent_id']
+#
+#         # поверка на то, что указанный parent_id вообще существует
+#         if unit_raw_parent_id:
+#             try:
+#                 _ = ShopUnit.objects.get(pk=unit_raw_parent_id)
+#             except ShopUnit.DoesNotExist:
+#                 parent_id = all_shop_unit.get(unit_raw_parent_id)
+#                 # если не None то пока нет, но скоро создадим
+#                 if parent_id is None:
+#                     raise BadRequest('Validation Failed')
+#         shop_unit = ShopUnit(**unit_data)
+#         try:
+#             shop_unit.clean_fields()
+#         except ValidationError as e:
+#             raise BadRequest('Validation Failed')
+#         _to_create_unit.append(shop_unit)
+#
+#     _to_update_unit = []
+#     for uuid, val in to_update_unit.items():
+#         unit_data = val['data']
+#         unit_raw_parent_id = val['raw_parent_id']
+#
+#         # поверка на то, что указанный parent_id вообще существует
+#         if unit_raw_parent_id:
+#             try:
+#                 _ = ShopUnit.objects.get(pk=unit_raw_parent_id)
+#             except ShopUnit.DoesNotExist:
+#                 parent_id = all_shop_unit.get(unit_raw_parent_id)
+#                 # если не None то пока нет, но скоро создадим
+#                 if parent_id is None:
+#                     raise BadRequest('Validation Failed')
+#         shop_unit = ShopUnit(**unit_data)
+#         try:
+#             shop_unit.clean_fields()
+#         except ValidationError as e:
+#             raise BadRequest('Validation Failed')
+#         _to_update_unit.append(shop_unit)
+#
+#     ShopUnit.objects.bulk_create(_to_create_unit)
+#     ShopUnit.objects.bulk_update(_to_update_unit, fields=['name', 'price', 'date'])
+#
+#     _to_create_unit_with_parent_id = []
+#     for uuid, val in to_create_unit.items():
+#         unit_data = val['data']
+#         unit_raw_parent_id = val['raw_parent_id']
+#
+#         if unit_raw_parent_id:
+#             try:
+#                 unit_parent = ShopUnit.objects.get(pk=unit_raw_parent_id)
+#                 unit_data['parent_id'] = unit_parent
+#             except ShopUnit.DoesNotExist:
+#                 logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
+#                 return JsonResponse({"message": "inconsistent"}, status=500)
+#             shop_unit = ShopUnit(**unit_data)
+#             try:
+#                 shop_unit.clean_fields()
+#             except ValidationError as e:
+#                 raise BadRequest('Validation Failed')
+#             _to_create_unit_with_parent_id.append(shop_unit)
+#
+#     _to_update_unit_with_parent_id = []
+#     for uuid, val in to_update_unit.items():
+#         unit_data = val['data']
+#         unit_raw_parent_id = val['raw_parent_id']
+#
+#         if unit_raw_parent_id:
+#             try:
+#                 unit_parent = ShopUnit.objects.get(pk=unit_raw_parent_id)
+#                 unit_data['parent_id'] = unit_parent
+#             except ShopUnit.DoesNotExist:
+#                 logger.error('inconsistent parent with id {} must be exist'.format(unit_raw_parent_id))
+#                 return JsonResponse({"message": "inconsistent"}, status=500)
+#             shop_unit = ShopUnit(**unit_data)
+#             try:
+#                 shop_unit.clean_fields()
+#             except ValidationError as e:
+#                 raise BadRequest('Validation Failed')
+#             _to_update_unit_with_parent_id.append(shop_unit)
+#
+#     ShopUnit.objects.bulk_update(_to_create_unit_with_parent_id, fields=['parent_id'])
+#     ShopUnit.objects.bulk_update(_to_update_unit_with_parent_id, fields=['parent_id'])
+#
+#     data = {}
+#     return JsonResponse(data, status=200)
