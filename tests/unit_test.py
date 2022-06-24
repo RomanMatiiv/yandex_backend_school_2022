@@ -249,7 +249,7 @@ def test_incorrect_parent():
     }
 
     status, _ = request("/imports", method="POST", data=import_batch)
-    assert status == 400, f"Expected HTTP status code 200, got {status}"
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
 
 
 def test_name_equal_null():
@@ -261,7 +261,7 @@ def test_name_equal_null():
             {
                 "type": "OFFER",
                 "name": None,
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
+                "id": "dab1ef99-b831-4801-98ed-79df40729fa1",
                 "parentId": None,
                 "price": 20000
             },
@@ -300,7 +300,7 @@ def test_price_equal_not_null_for_category():
             {
                 "type": "CATEGORY",
                 "name": "Плееры",
-                "id": "53770c11-9b6a-4c1a-b66b-de72cddc15e8",
+                "id": "33161b54-bdef-4d85-8d6d-fa19f1f645f5",
                 "parentId": None,
                 "price": 999,
             },
@@ -412,15 +412,15 @@ def test_import_children_before_parent():
         "items": [
             {
                 "type": "OFFER",
-                "name": "jPhone 666",
-                "id": "c57a4cc4-86da-46a5-bda5-95bbbc451f20",
-                "parentId": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "name": "Keychron k3",
+                "id": "9ce9ad31-aa6c-457c-9247-59d3fec38fa4",
+                "parentId": "4337063b-2532-4bcf-a1dd-1288d2c2745d",
                 "price": 79999
             },
             {
                 "type": "CATEGORY",
-                "name": "Смартфоны",
-                "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
+                "name": "Клавиатуры",
+                "id": "4337063b-2532-4bcf-a1dd-1288d2c2745d",
                 "parentId": None
             },
         ],
@@ -436,21 +436,14 @@ def test_change_type():
     """
     Тестирование изменения типа объекта с offer на category
 
-    !!!тип то не меняет но и 400 не возвращяет
+    !!!он просто создает еще один обект другого типа с таким же id
     """
     import_batch = {
         "items": [
             {
-                "type": "CATEGORY",
-                "name": "Товары",
-                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
-                "parentId": None
-            },
-            {
                 "type": "OFFER",
                 "name": "Nokia 3310",
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
-                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
                 "price": 20000
             },
         ],
@@ -461,8 +454,7 @@ def test_change_type():
             {
                 "type": "CATEGORY",
                 "name": "Nokia 3310",
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
-                "parentId": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
             }
         ],
         "updateDate": "2022-04-01T12:00:00.000Z"
@@ -555,7 +547,126 @@ def test_stats():
     print("Test stats passed.")
 
 
-@pytest.mark.skip(reason="not implement")
+def test_delete_offer():
+    id = "786eb0a7-902e-4e93-a798-6aad6de9ac68"
+    create = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Logitech MX mouse",
+                "id": id,
+                "price": 10000
+            }
+        ],
+        "updateDate": "2022-02-02T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/nodes/{id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_category():
+    id = "0ba80f69-095d-4dd1-9203-4d0d6b4d25fa"
+    create = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Mouse",
+                "id": id,
+            }
+        ],
+        "updateDate": "2022-02-02T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/nodes/{id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_offer_wit_category():
+    offer_id = '8a844c4f-a4d8-4af7-9cb3-8f8fa741b791'
+    category_id = 'd9b031f6-14c1-4268-8f3e-a0eec9726a2d'
+    create = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Лампы",
+                "id": category_id,
+                "parentId": None
+            },
+            {
+                "type": "OFFER",
+                "name": "Xiaomi Yeelight",
+                "id": offer_id,
+                "parentId": category_id,
+                "price": 6000
+            }
+        ],
+        "updateDate": "2022-03-01T12:00:00.000Z"
+    }
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{category_id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{offer_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{category_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_category_with_subcategory():
+    category_id = '7ef817a6-fe02-4a98-a27a-f5cc4d5bc09b'
+    sub_category_id = '0fbaa683-63a1-4883-9833-dbf542c56e6e'
+    create = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Кабеля",
+                "id": category_id,
+                "parentId": None
+            },
+            {
+                "type": "CATEGORY",
+                "name": "Кабеля Type C",
+                "id": sub_category_id,
+                "parentId": category_id,
+            }
+        ],
+        "updateDate": "2022-01-03T12:00:00.000Z"
+    }
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{category_id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{category_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{sub_category_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_invalid_uuid():
+    id = '1234'
+    status, _ = request(f"/delete/{id}", method="DELETE")
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
 def test_delete():
     status, _ = request(f"/delete/{ROOT_ID}", method="DELETE")
     assert status == 200, f"Expected HTTP status code 200, got {status}"

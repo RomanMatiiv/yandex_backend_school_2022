@@ -19,5 +19,7 @@ from goods.views import ShopUnitApi
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('imports', ShopUnitApi.as_view())
+    path('imports', ShopUnitApi.as_view()),
+    path('nodes/<str:id>', ShopUnitApi.as_view()),
+    path('delete/<str:id>', ShopUnitApi.as_view()),
 ]
