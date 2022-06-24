@@ -547,7 +547,126 @@ def test_stats():
     print("Test stats passed.")
 
 
-@pytest.mark.skip(reason="not implement")
+def test_delete_offer():
+    id = "786eb0a7-902e-4e93-a798-6aad6de9ac68"
+    create = {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "Logitech MX mouse",
+                "id": id,
+                "price": 10000
+            }
+        ],
+        "updateDate": "2022-02-02T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/nodes/{id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_category():
+    id = "0ba80f69-095d-4dd1-9203-4d0d6b4d25fa"
+    create = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Mouse",
+                "id": id,
+            }
+        ],
+        "updateDate": "2022-02-02T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/nodes/{id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_offer_wit_category():
+    offer_id = '8a844c4f-a4d8-4af7-9cb3-8f8fa741b791'
+    category_id = 'd9b031f6-14c1-4268-8f3e-a0eec9726a2d'
+    create = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Лампы",
+                "id": category_id,
+                "parentId": None
+            },
+            {
+                "type": "OFFER",
+                "name": "Xiaomi Yeelight",
+                "id": offer_id,
+                "parentId": category_id,
+                "price": 6000
+            }
+        ],
+        "updateDate": "2022-03-01T12:00:00.000Z"
+    }
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{category_id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{offer_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{category_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_category_with_subcategory():
+    category_id = '7ef817a6-fe02-4a98-a27a-f5cc4d5bc09b'
+    sub_category_id = '0fbaa683-63a1-4883-9833-dbf542c56e6e'
+    create = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Кабеля",
+                "id": category_id,
+                "parentId": None
+            },
+            {
+                "type": "CATEGORY",
+                "name": "Кабеля Type C",
+                "id": sub_category_id,
+                "parentId": category_id,
+            }
+        ],
+        "updateDate": "2022-01-03T12:00:00.000Z"
+    }
+    status, _ = request("/imports", method="POST", data=create)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/delete/{category_id}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{category_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+    status, _ = request(f"/nodes/{sub_category_id}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
+
+def test_delete_invalid_uuid():
+    id = '1234'
+    status, _ = request(f"/delete/{id}", method="DELETE")
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+
 def test_delete():
     status, _ = request(f"/delete/{ROOT_ID}", method="DELETE")
     assert status == 200, f"Expected HTTP status code 200, got {status}"
