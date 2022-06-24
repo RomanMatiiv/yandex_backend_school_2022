@@ -158,3 +158,64 @@ class ShopUnitApi(View):
 
         data = {}
         return JsonResponse(data, status=200)
+
+    def get(self, request, id: str):
+        """
+        Пока здесь только обработка 404
+
+        Args:
+            request:
+            id:
+
+        Returns:
+
+        """
+        try:
+            uuid_shop_unit = UUID(id)
+        except ValueError:
+            raise BadRequest('Invalid UUID')
+
+        offer_does_not_exist = False
+        category_does_not_exits = False
+
+        try:
+            ShopUnitOffer.objects.get(pk=uuid_shop_unit)
+        except ShopUnitOffer.DoesNotExist:
+            offer_does_not_exist = True
+
+        try:
+            ShopUnitCategory.objects.get(pk=uuid_shop_unit)
+        except ShopUnitCategory.DoesNotExist:
+            category_does_not_exits = True
+
+        logger.debug(f"offer_does_not_exist:{offer_does_not_exist}, category_does_not_exits:{category_does_not_exits}")
+        if offer_does_not_exist and category_does_not_exits:
+            raise Http404('Item not found')
+        else:
+            raise NotImplementedError
+
+    def delete(self, request, id: str):
+        try:
+            uuid_shop_unit = UUID(id)
+        except ValueError:
+            raise BadRequest('Invalid UUID')
+
+        offer_does_not_exist = False
+        category_does_not_exits = False
+
+        try:
+            ShopUnitOffer.objects.get(pk=uuid_shop_unit).delete()
+        except ShopUnitOffer.DoesNotExist:
+            offer_does_not_exist = True
+
+        try:
+            ShopUnitCategory.objects.get(pk=uuid_shop_unit).delete()
+        except ShopUnitCategory.DoesNotExist:
+            category_does_not_exits = True
+
+        logger.debug(f"offer_does_not_exist:{offer_does_not_exist}, category_does_not_exits:{category_does_not_exits}")
+        if offer_does_not_exist and category_does_not_exits:
+            raise Http404('Item not found')
+
+        data = {}
+        return JsonResponse(data, status=200)
