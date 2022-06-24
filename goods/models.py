@@ -19,14 +19,14 @@ def equal_null(value):
         raise ValidationError("Must be None")
 
 
-def type_offer(value):
-    if value != ShopUnitType.OFFER:
-        raise ValidationError("Must be offer")
-
-
-def type_category(value):
-    if value != ShopUnitType.CATEGORY:
-        raise ValidationError("Must be category")
+# def type_offer(value):
+#     if value != ShopUnitType.OFFER:
+#         raise ValidationError("Must be offer")
+#
+#
+# def type_category(value):
+#     if value != ShopUnitType.CATEGORY:
+#         raise ValidationError("Must be category")
 
 
 class ShopUnitType(models.TextChoices):
@@ -39,7 +39,7 @@ class ShopUnitOffer(models.Model):
     name = CharField(max_length=255, null=False)
     parent_id = ForeignKey('ShopUnitCategory', on_delete=models.CASCADE, null=True, blank=True)
     price = FloatField(null=False, validators=[MinValueValidator(0)])
-    type = CharField(max_length=20, default=ShopUnitType.OFFER, null=False, editable=False, validators=[type_offer])  # todo написать валидатор который будет проверять что тип равен нужному
+    type = CharField(max_length=20, default=ShopUnitType.OFFER, null=False, editable=False)
     date = DateTimeField()
 
 
@@ -48,7 +48,7 @@ class ShopUnitCategory(models.Model):
     name = CharField(max_length=255, null=False)
     parent_id = ForeignKey('ShopUnitCategory', on_delete=models.CASCADE, null=True, blank=True)
     price = FloatField(null=True, blank=True, default=None, editable=False, validators=[equal_null])
-    type = CharField(max_length=20, default=ShopUnitType.CATEGORY, null=False, editable=False, validators=[type_category])  # todo написать валидатор который будет проверять что тип равен нужному
+    type = CharField(max_length=20, default=ShopUnitType.CATEGORY, null=False, editable=False)
     date = DateTimeField()
 
 
