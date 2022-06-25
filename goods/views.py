@@ -3,10 +3,10 @@ import logging
 from uuid import UUID
 from typing import Dict
 from typing import List
+from itertools import chain
 
 from django.db import transaction
 from django.db.models import Model
-
 from django.core.exceptions import ValidationError
 from django.http import Http404
 from django.http import HttpResponse
@@ -17,6 +17,7 @@ from django.core.exceptions import BadRequest
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+
 
 # from goods.models import ShopUnit
 from goods.models import ShopUnitOffer
@@ -159,41 +160,6 @@ class ShopUnitApi(View):
         data = {}
         return JsonResponse(data, status=200)
 
-    def get(self, request, id: str):
-        """
-        Пока здесь только обработка 404
-
-        Args:
-            request:
-            id:
-
-        Returns:
-
-        """
-        try:
-            uuid_shop_unit = UUID(id)
-        except ValueError:
-            raise BadRequest('Invalid UUID')
-
-        offer_does_not_exist = False
-        category_does_not_exits = False
-
-        try:
-            ShopUnitOffer.objects.get(pk=uuid_shop_unit)
-        except ShopUnitOffer.DoesNotExist:
-            offer_does_not_exist = True
-
-        try:
-            ShopUnitCategory.objects.get(pk=uuid_shop_unit)
-        except ShopUnitCategory.DoesNotExist:
-            category_does_not_exits = True
-
-        logger.debug(f"offer_does_not_exist:{offer_does_not_exist}, category_does_not_exits:{category_does_not_exits}")
-        if offer_does_not_exist and category_does_not_exits:
-            raise Http404('Item not found')
-        else:
-            raise NotImplementedError
-
     def delete(self, request, id: str):
         try:
             uuid_shop_unit = UUID(id)
@@ -219,3 +185,78 @@ class ShopUnitApi(View):
 
         data = {}
         return JsonResponse(data, status=200)
+
+    def get(self, request, id: str):
+        """
+        Пока здесь только обработка 404
+
+        Args:
+            request:
+            id:
+
+        Returns:
+
+        """
+        try:
+            uuid_shop_unit = UUID(id)
+        except ValueError:
+            raise BadRequest('Invalid UUID')
+
+        offer_does_not_exist = False
+        category_does_not_exits = False
+
+        try:
+            shop_unit = ShopUnitOffer.objects.get(pk=uuid_shop_unit)
+        except ShopUnitOffer.DoesNotExist:
+            offer_does_not_exist = True
+
+        try:
+            shop_unit = ShopUnitCategory.objects.get(pk=uuid_shop_unit)
+        except ShopUnitCategory.DoesNotExist:
+            category_does_not_exits = True
+
+        logger.debug(f"offer_does_not_exist:{offer_does_not_exist}, category_does_not_exits:{category_does_not_exits}")
+        if offer_does_not_exist and category_does_not_exits:
+            raise Http404('Item not found')
+        else:
+            date = self._recursive_calc_nodes(shop_unit) # todo вот здесь закончил глобально
+            return JsonResponse(date, status=200)
+
+    def _recursive_calc_nodes(self, shop_unit):
+        shop_unit_res = {
+            'id': shop_unit.id,
+            'name': shop_unit.name,
+            'type': shop_unit.type,
+            'parentId': shop_unit.parent_id_id,  # немножечко внимания
+            'date': shop_unit.date,
+            'price': shop_unit.price,
+            'children': None,
+        }
+        if shop_unit.type == ShopUnitType.CATEGORY:
+            shop_unit_res['children'] = []
+
+        shop_unit_children = self.__get_all_child(shop_unit)
+        if shop_unit_children and shop_unit_res['price'] is None:
+            shop_unit_res['price'] = 0
+
+        for children in shop_unit_children:
+            shop_unit_res['price'] += self._recursive_calc_price(children)
+            shop_unit_res['children'].append(self._recursive_calc_nodes(children))
+        return shop_unit_res
+
+    def _recursive_calc_price(self, shop_unit) -> int:
+        shop_unit_price = (shop_unit.price or 0)
+        shop_unit_children = self.__get_all_child(shop_unit)
+
+        for children in shop_unit_children:
+            shop_unit_price += self._recursive_calc_price(children)
+        return shop_unit_price
+
+    def __get_all_child(self, shop_unit) -> List:
+        all_child = []
+        if isinstance(shop_unit, ShopUnitCategory):
+            categories = shop_unit.shopunitcategory_set.all()
+            offers = shop_unit.shopunitoffer_set.all()
+            all_child = list(chain(categories, offers))
+
+        return all_child
