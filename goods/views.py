@@ -223,6 +223,14 @@ class ShopUnitApi(View):
             return JsonResponse(date, status=200)
 
     def _recursive_calc_nodes(self, shop_unit):
+        """
+
+        Args:
+            shop_unit:
+
+        Returns:
+
+        """
         shop_unit_res = {
             'id': shop_unit.id,
             'name': shop_unit.name,
@@ -236,23 +244,57 @@ class ShopUnitApi(View):
             shop_unit_res['children'] = []
 
         shop_unit_children = self.__get_all_child(shop_unit)
+        # тк += для None и int не определенно
         if shop_unit_children and shop_unit_res['price'] is None:
             shop_unit_res['price'] = 0
 
+        n_offers = 0
         for children in shop_unit_children:
-            shop_unit_res['price'] += self._recursive_calc_price(children)
+            child_sum_price, child_n_offers = self._recursive_calc_price(children, parent_offers=n_offers)
+            shop_unit_res['price'] += child_sum_price
+            n_offers += child_n_offers
+
             shop_unit_res['children'].append(self._recursive_calc_nodes(children))
+
+        try:
+            shop_unit_res['price'] /= n_offers
+            shop_unit_res['price'] = int(shop_unit_res['price'])
+        except ZeroDivisionError:
+            pass
+
         return shop_unit_res
 
-    def _recursive_calc_price(self, shop_unit) -> int:
+    def _recursive_calc_price(self, shop_unit, parent_offers) -> [int, int]:
+        """
+
+        Args:
+            shop_unit:
+
+        Returns:
+
+        """
         shop_unit_price = (shop_unit.price or 0)
         shop_unit_children = self.__get_all_child(shop_unit)
 
+        if shop_unit.type == ShopUnitType.OFFER:
+            n_offers = 1
+        else:
+            n_offers = 0
         for children in shop_unit_children:
-            shop_unit_price += self._recursive_calc_price(children)
-        return shop_unit_price
+            child_sum_price, child_n_offers = self._recursive_calc_price(children, parent_offers=n_offers)
+            shop_unit_price += child_sum_price
+            n_offers += child_n_offers
+        return [shop_unit_price, n_offers]
 
     def __get_all_child(self, shop_unit) -> List:
+        """
+
+        Args:
+            shop_unit:
+
+        Returns:
+
+        """
         all_child = []
         if isinstance(shop_unit, ShopUnitCategory):
             categories = shop_unit.shopunitcategory_set.all()
