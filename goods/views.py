@@ -1,30 +1,24 @@
 import json
 import logging
 from datetime import datetime
-from uuid import UUID
+from itertools import chain
 from typing import Dict
 from typing import List
-from itertools import chain
+from typing import Union
+from uuid import UUID
 
-from django.db import transaction
-from django.db.models import Model
-from django.core.exceptions import ValidationError
-from django.http import Http404
-from django.http import HttpResponse
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from django.shortcuts import render
 from django.core.exceptions import BadRequest
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.http import Http404
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-
-# from goods.models import ShopUnit
-from goods.models import ShopUnitOffer
 from goods.models import ShopUnitCategory
+from goods.models import ShopUnitOffer
 from goods.models import ShopUnitType
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,18 +31,6 @@ class ShopUnitApi(View):
     def _items_json_to_model_with_meta(self, items: List[Dict], update_date: str) -> [Dict[ShopUnitOffer, UUID],
                                                                                       Dict[ShopUnitCategory, UUID]
                                                                                       ]:
-        """
-        Преобразует
-
-        Внимание в моделях не заполнено поле parent_id
-        тк не факт, что данные объекты уже есть в БД
-        Args:
-            items:
-            update_date:
-
-        Returns:
-
-        """
         offer_items = {}
         category_items = {}
 
@@ -190,16 +172,6 @@ class ShopUnitApi(View):
         return JsonResponse(data, status=200)
 
     def get(self, request, id: str):
-        """
-        Пока здесь только обработка 404
-
-        Args:
-            request:
-            id:
-
-        Returns:
-
-        """
         try:
             uuid_shop_unit = UUID(id)
         except ValueError:
@@ -225,15 +197,7 @@ class ShopUnitApi(View):
             date = self._recursive_calc_nodes(shop_unit)
             return JsonResponse(date, status=200)
 
-    def _recursive_calc_nodes(self, shop_unit):
-        """
-
-        Args:
-            shop_unit:
-
-        Returns:
-
-        """
+    def _recursive_calc_nodes(self, shop_unit: Union[ShopUnitOffer, ShopUnitCategory]):
         date_str = datetime.strftime(shop_unit.date, DATE_FORMAT_FOR_JSON)
         fmt_date_str = date_str[:-3] + "Z"
 
@@ -271,14 +235,6 @@ class ShopUnitApi(View):
         return shop_unit_res
 
     def _recursive_calc_price(self, shop_unit, parent_offers) -> [int, int]:
-        """
-
-        Args:
-            shop_unit:
-
-        Returns:
-
-        """
         shop_unit_price = (shop_unit.price or 0)
         shop_unit_children = self.__get_all_child(shop_unit)
 
@@ -287,17 +243,17 @@ class ShopUnitApi(View):
         else:
             n_offers = 0
         for children in shop_unit_children:
-            child_sum_price, child_n_offers = self._recursive_calc_price(children, parent_offers=n_offers)
+            child_sum_price, child_n_offers = self._recursive_calc_price(children, parent_offers)
             shop_unit_price += child_sum_price
             n_offers += child_n_offers
         return [shop_unit_price, n_offers]
 
-    def __get_all_child(self, shop_unit) -> List:
+    def __get_all_child(self, shop_unit: Union[ShopUnitOffer, ShopUnitCategory]) -> List[Union[ShopUnitOffer, ShopUnitCategory]]:
         """
-        Возвращяет все дочерние элементы
+        Возвращает все дочерние элементы
 
         Args:
-            shop_unit:
+            shop_unit: объект, дочерние элементы которого нужно вернуть
 
         Returns:
 
