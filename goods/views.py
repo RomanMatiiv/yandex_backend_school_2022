@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from uuid import UUID
 from typing import Dict
 from typing import List
@@ -26,6 +27,8 @@ from goods.models import ShopUnitType
 
 
 logger = logging.getLogger(__name__)
+
+DATE_FORMAT_FOR_JSON = '%Y-%m-%dT%H:%M:%S.%f'
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -219,7 +222,7 @@ class ShopUnitApi(View):
         if offer_does_not_exist and category_does_not_exits:
             raise Http404('Item not found')
         else:
-            date = self._recursive_calc_nodes(shop_unit) # todo вот здесь закончил глобально
+            date = self._recursive_calc_nodes(shop_unit)
             return JsonResponse(date, status=200)
 
     def _recursive_calc_nodes(self, shop_unit):
@@ -231,12 +234,15 @@ class ShopUnitApi(View):
         Returns:
 
         """
+        date_str = datetime.strftime(shop_unit.date, DATE_FORMAT_FOR_JSON)
+        fmt_date_str = date_str[:-3] + "Z"
+
         shop_unit_res = {
             'id': shop_unit.id,
             'name': shop_unit.name,
             'type': shop_unit.type,
-            'parentId': shop_unit.parent_id_id,  # немножечко внимания
-            'date': shop_unit.date,
+            'parentId': shop_unit.parent_id_id,  # todo переименовать
+            'date': fmt_date_str,
             'price': shop_unit.price,
             'children': None,
         }
@@ -288,6 +294,7 @@ class ShopUnitApi(View):
 
     def __get_all_child(self, shop_unit) -> List:
         """
+        Возвращяет все дочерние элементы
 
         Args:
             shop_unit:
