@@ -5,11 +5,11 @@ COPY mega_market/ .
 RUN pip install --upgrade pip \
     pip install -r requirements.txt --no-cache-dir
 
-#ADD deploy/web/entrypoint.sh .
-#RUN chmod +x /entrypoint.sh
-RUN python manage.py migrate
-#ADD .env .
+ADD deploy/web/entrypoint.sh .
+RUN chmod +x /entrypoint.sh
+ADD .env .
+RUN #python manage.py migrate
 
-#ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:80"]
