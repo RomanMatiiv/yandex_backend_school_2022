@@ -8,7 +8,6 @@ RUN pip install --upgrade pip \
 ADD deploy/web/entrypoint.sh .
 RUN chmod +x /entrypoint.sh
 ADD .env .
-RUN #python manage.py migrate
 
 ENTRYPOINT ["/entrypoint.sh"]
 
