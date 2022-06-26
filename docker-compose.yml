@@ -1,23 +1,25 @@
 version: '3'
 services:
-#  db:
-#    build:
-#      context: .
-#      dockerfile: deploy/db/Dockerfile
-#    volumes:
-#      - postgres_db:/var/lib/postgresql/data
-#    env_file:
-#      - .env
+  db:
+    build:
+      context: .
+      dockerfile: deploy/db/Dockerfile
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+    env_file:
+      - .env
+
   web:
     build:
       context: .
       dockerfile: deploy/web/Dockerfile
-    volumes:
-      - sqlite_db:/db
     ports:
       - "80:80"
+    env_file:
+      - .env
+    depends_on:
+      - db
 
 volumes:
-  sqlite_db:
-#  static:
-#  postgres_db:
+  postgres_db:
+#  sqlite_db:
