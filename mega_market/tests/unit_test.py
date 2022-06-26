@@ -523,7 +523,6 @@ def test_nodes():
     print("Test nodes passed.")
 
 
-@pytest.mark.skip(reason="not implement")
 def test_sales():
     params = urllib.parse.urlencode({
         "date": "2022-02-04T00:00:00.000Z"
@@ -533,7 +532,6 @@ def test_sales():
     print("Test sales passed.")
 
 
-@pytest.mark.skip(reason="not implement")
 def test_stats():
     params = urllib.parse.urlencode({
         "dateStart": "2022-02-01T00:00:00.000Z",
