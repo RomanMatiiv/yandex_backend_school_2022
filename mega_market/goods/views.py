@@ -226,11 +226,12 @@ class ShopUnitApi(View):
 
             shop_unit_res['children'].append(self._recursive_calc_nodes(children))
 
-        try:
-            shop_unit_res['price'] /= n_offers
-            shop_unit_res['price'] = int(shop_unit_res['price'])
-        except ZeroDivisionError:
-            pass
+        if shop_unit_res['price']:
+            try:
+                shop_unit_res['price'] /= n_offers
+                shop_unit_res['price'] = int(shop_unit_res['price'])
+            except ZeroDivisionError:
+                pass
 
         return shop_unit_res
 
