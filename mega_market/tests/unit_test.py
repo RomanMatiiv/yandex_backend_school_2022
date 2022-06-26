@@ -13,6 +13,7 @@ import pytest
 API_BASEURL = "http://localhost:80"
 
 ROOT_ID = "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1"
+ROOT_ID_FOR_MY_UNIT = "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07"
 
 IMPORT_BATCHES = [
     {
@@ -223,11 +224,25 @@ def test_import():
     print("Test import passed.")
 
 
+def test_create_my_root_unit():
+    root_unit = {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Объекты",
+                "id": ROOT_ID_FOR_MY_UNIT
+            },
+        ],
+        "updateDate": "2022-03-01T11:00:00.000Z"
+    }
+
+    status, _ = request("/imports", method="POST", data=root_unit)
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+
 def test_incorrect_parent():
     """
     Родителем товара или категории может быть только категория
-
-    Решение: нужно водить 2 модели а не все в одной делать
     """
     import_batch = {
         "items": [
@@ -235,13 +250,13 @@ def test_incorrect_parent():
                 "type": "CATEGORY",
                 "name": "Товары",
                 "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
-                "parentId": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07"
+                "parentId": "eeb75ccc-c543-443b-b15f-0949a00d9c33"
             },
             {
                 "type": "OFFER",
                 "name": "Nokia 3310",
-                "id": "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07",
-                "parentId": None,
+                "id": "eeb75ccc-c543-443b-b15f-0949a00d9c33",
+                "parentId": ROOT_ID_FOR_MY_UNIT,
                 "price": 20000
             },
         ],
@@ -262,7 +277,7 @@ def test_name_equal_null():
                 "type": "OFFER",
                 "name": None,
                 "id": "dab1ef99-b831-4801-98ed-79df40729fa1",
-                "parentId": None,
+                "parentId": ROOT_ID_FOR_MY_UNIT,
                 "price": 20000
             },
         ],
@@ -275,7 +290,7 @@ def test_name_equal_null():
                 "type": "CATEGORY",
                 "name": None,
                 "id": "61028d01-2e20-4ce2-b5ff-a5901a97af59",
-                "parentId": None,
+                "parentId": ROOT_ID_FOR_MY_UNIT,
             },
         ],
         "updateDate": "2022-03-01T11:00:00.000Z"
@@ -291,9 +306,6 @@ def test_name_equal_null():
 def test_price_equal_not_null_for_category():
     """
     У категорий поле price должно содержать null
-
-    Решение: нужно водить 2 модели а не все в одной делать
-             ну или в переопределенный clean_fields засунуть, что такое себе
     """
     category = {
         "items": [
@@ -301,7 +313,7 @@ def test_price_equal_not_null_for_category():
                 "type": "CATEGORY",
                 "name": "Плееры",
                 "id": "33161b54-bdef-4d85-8d6d-fa19f1f645f5",
-                "parentId": None,
+                "parentId": ROOT_ID_FOR_MY_UNIT,
                 "price": 999,
             },
         ],
@@ -322,7 +334,7 @@ def test_offer_price_equal_null():
                 "type": "OFFER",
                 "name": "Starlink",
                 "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
-                "parentId": "bc730e66-7be6-4740-bf20-7820a1da9c12",
+                "parentId": ROOT_ID_FOR_MY_UNIT,
                 "price": None,
             }
         ],
@@ -343,7 +355,7 @@ def test_offer_price_equal_minus_one():
                 "type": "OFFER",
                 "name": "Starlink",
                 "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
-                "parentId": "bc730e66-7be6-4740-bf20-7820a1da9c12",
+                "parentId": ROOT_ID_FOR_MY_UNIT,
                 "price": -1,
             }
         ],
@@ -364,13 +376,13 @@ def test_two_element_with_same_uuid():
                 "type": "CATEGORY",
                 "name": "Смартфоны 1",
                 "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
-                "parentId": None
+                "parentId": ROOT_ID_FOR_MY_UNIT
             },
             {
                 "type": "CATEGORY",
                 "name": "Смартфоны 2",
                 "id": "bb54bb58-b308-46fb-88e1-8f7b7cdf56da",
-                "parentId": None
+                "parentId": ROOT_ID_FOR_MY_UNIT
             },
         ],
         "updateDate": "2022-03-01T12:00:00.000Z"
@@ -392,7 +404,7 @@ def test_incorrect_date_format():
                 "type": "OFFER",
                 "name": "Starlink",
                 "id": "ec06f1d1-8bc0-4df3-aac7-4ee98360ae9a",
-                "parentId": None,
+                "parentId": ROOT_ID_FOR_MY_UNIT,
             }
         ],
         "updateDate": "01-03-2022"
@@ -421,7 +433,7 @@ def test_import_children_before_parent():
                 "type": "CATEGORY",
                 "name": "Клавиатуры",
                 "id": "4337063b-2532-4bcf-a1dd-1288d2c2745d",
-                "parentId": None
+                "parentId": ROOT_ID_FOR_MY_UNIT
             },
         ],
         "updateDate": "2022-03-01T12:00:00.000Z"
@@ -435,7 +447,6 @@ def test_import_children_before_parent():
 def test_change_type():
     """
     Тестирование изменения типа объекта с offer на category
-
     """
     import_batch = {
         "items": [
@@ -443,7 +454,8 @@ def test_change_type():
                 "type": "OFFER",
                 "name": "Nokia 3310",
                 "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
-                "price": 20000
+                "price": 20000,
+                "parentId":ROOT_ID_FOR_MY_UNIT
             },
         ],
         "updateDate": "2022-02-01T12:00:00.000Z"
@@ -454,6 +466,7 @@ def test_change_type():
                 "type": "CATEGORY",
                 "name": "Nokia 3310",
                 "id": "3a112ec7-ab99-4918-8284-2f11a00a9519",
+                "parentId": ROOT_ID_FOR_MY_UNIT
             }
         ],
         "updateDate": "2022-04-01T12:00:00.000Z"
@@ -467,16 +480,13 @@ def test_change_type():
 
 
 def test_import_incorrect_uuid():
-    """
-    Тестирование изменения типа объекта с offer на category
-    """
     import_category = {
         "items": [
             {
                 "type": "CATEGORY",
                 "name": "Спутники",
                 "id": "1234",
-                "parentId": None,
+                "parentId": ROOT_ID_FOR_MY_UNIT,
             }
         ],
         "updateDate": "2022-02-01T11:00:00.000Z"
@@ -484,26 +494,6 @@ def test_import_incorrect_uuid():
 
     status, _ = request("/imports", method="POST", data=import_category)
     assert status == 400, f"Expected HTTP status code 400, got {status}"
-
-
-def test_import_offer_without_parent_id():
-    """
-    Создание товара без категории
-    """
-    import_offer = {
-        "items": [
-            {
-                "type": "OFFER",
-                "name": "Starlink",
-                "id": "daa328ab-dadc-4e4b-b25d-1a46316c6f19",
-                "price": 100000
-            }
-        ],
-        "updateDate": "2022-03-01T11:00:00.000Z"
-    }
-
-    status, _ = request("/imports", method="POST", data=import_offer)
-    assert status == 200, f"Expected HTTP status code 200, got {status}"
 
 
 def test_nodes():
@@ -551,7 +541,8 @@ def test_delete_offer():
                 "type": "OFFER",
                 "name": "Logitech MX mouse",
                 "id": id,
-                "price": 10000
+                "price": 10000,
+                "parentId": ROOT_ID_FOR_MY_UNIT
             }
         ],
         "updateDate": "2022-02-02T11:00:00.000Z"
@@ -575,6 +566,7 @@ def test_delete_category():
                 "type": "CATEGORY",
                 "name": "Mouse",
                 "id": id,
+                "parentId":ROOT_ID_FOR_MY_UNIT
             }
         ],
         "updateDate": "2022-02-02T11:00:00.000Z"
@@ -599,7 +591,7 @@ def test_delete_offer_wit_category():
                 "type": "CATEGORY",
                 "name": "Лампы",
                 "id": category_id,
-                "parentId": None
+                "parentId": ROOT_ID_FOR_MY_UNIT
             },
             {
                 "type": "OFFER",
@@ -633,7 +625,7 @@ def test_delete_category_with_subcategory():
                 "type": "CATEGORY",
                 "name": "Кабеля",
                 "id": category_id,
-                "parentId": None
+                "parentId": ROOT_ID_FOR_MY_UNIT
             },
             {
                 "type": "CATEGORY",
@@ -671,6 +663,15 @@ def test_delete():
     assert status == 404, f"Expected HTTP status code 404, got {status}"
 
     print("Test delete passed.")
+
+
+def test_delete_my_root_unit():
+    status, _ = request(f"/delete/{ROOT_ID_FOR_MY_UNIT}", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
+
+    status, _ = request(f"/nodes/{ROOT_ID_FOR_MY_UNIT}", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
 
 
 def test_all():
