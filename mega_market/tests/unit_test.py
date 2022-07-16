@@ -11,6 +11,8 @@ import urllib.request
 import pytest
 
 API_BASEURL = "http://localhost:80"
+# API_BASEURL = "http://external-2018.usr.yandex-academy.ru:80"
+# API_BASEURL = "https://external-2018.usr.yandex-academy.ru:80"
 
 ROOT_ID = "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1"
 ROOT_ID_FOR_MY_UNIT = "4b0bc882-6c39-4d5b-b3e1-b8964ff4ec07"
